@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getUsers } from './services/api.js';
 import { registerUser, loginUser } from './services/authService.js';
+import { getPosts } from './services/wordpressService.js';
 import './App.css';
+
 
 export default function App() {
   const [users, setUsers] = useState([]);
@@ -63,6 +65,23 @@ export default function App() {
     setError('');
   };
 
+  const [posts, setPosts] = useState([]);
+
+  const fetchPosts = async () => {
+    const data = await getPosts();
+    setPosts(data);
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token && isLoggedIn){
+      fetchUsers();
+      fetchPosts();
+    }
+  },[search, role, page, limit, isLoggedIn]);
+
+
+
   return (
     <main className="App">
       <h1>User Management</h1>
@@ -105,6 +124,18 @@ export default function App() {
             <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creando…' : 'Registrarse'}</button>
           </form>
           <button type="button" onClick={() => { setError(''); setShowLogin(true); }}>Volver a iniciar sesión</button>
+        </section>
+      ) (  
+        <section>
+          <h2>Wordpress Posts</h2>
+          <ul>
+            {posts.map((post) => {
+              <li key = {post.id}>
+                <h3>{post.title.rendered}</h3>
+                <div dangerouslySetInnerHTML={{__html: post.content.rendered }}/>
+              </li>
+            })}
+          </ul>
         </section>
       )}
       {error && <p role="status">{error}</p>}
