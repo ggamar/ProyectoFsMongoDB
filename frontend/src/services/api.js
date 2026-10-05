@@ -12,12 +12,36 @@ export const createUser = async (user) => {
   }
 };
 
-export const getUsers = async () => {
+export const getUsers = async ({search, role, page, limit}) => {
   try {
-    const response = await axios.get(`${API_URL}/users`);
+    const token = localStorage.getItem('authToken');
+
+    if (!token){
+      throw new Error('Not authenticated');
+    }
+
+    //construir los parametros de la consulta
+    const params = {
+      search,
+      role,
+      page,
+      limit
+    };
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params
+    };
+
+    //Realizar la solicitud GET con los parametros y el encabezado Authorization
+    const response = await axios.get(`${API_URL}/users`, config);
     return response.data;
-  } catch (error) {
-    console.error('Error fetching users:', error);
+  }catch (error) {
+    if (error.message === 'Not authenticated'){
+      return { user: [] };
+    }
     throw error;
   }
 };

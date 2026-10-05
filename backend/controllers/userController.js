@@ -31,16 +31,50 @@ export const createUser = async (req, res) => {
 
 };
 
-export const getUser = async (req, res) => {
-    try {
-        const users = await User.find();
-        res.status(200).json(users);
-    } catch(error){
-        res.status(400).json({ error : 'Error al encontrar el usuario'})
+export const getUsers = async (req, res) => {
+  try {
+    const { search, role, page = 1, limit = 10 } = req.query;
+
+    // Construir la consulta de búsqueda y filtrado
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } }, // Búsqueda insensible a mayúsculas
+        { email: { $regex: search, $options: 'i' } }
+      ];
     }
+
+    if (role) {
+      query.role = role; // Filtrar por rol
+    }
+
+    // Paginación y conversión a enteros, con valores predeterminados si no se proporcionan
+    const pageNumber = parseInt(page, 10) || 1;
+    const limitNumber = parseInt(limit, 10) || 5;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const users = await User.find(query)
+      .limit(limitNumber)       //Limitar cantidad de resultados
+      .skip(skip)               //saltar registros para paginacion
+      .sort({ createdAt: -1 }); //Ordenar por fecha de creacion (mas reciente primero)
+
+    const totalUsers = await User.countDocuments(query);
+
+    res.status(200).json({
+      totalUsers,
+      currentPage: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(totalUsers / limitNumber), //calcular el total de pa
+      users,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener los usuarios", error });
+  }
 };
 
-// Iniciar sesion
+// Iniciar
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -68,3 +102,5 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export default loginUser;
